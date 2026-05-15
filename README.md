@@ -10,7 +10,7 @@
 
 ---
 
-## 🇹🇼 中文規則 (Traditional Chinese)
+## 中文規則
 
 ### 遊戲準備
 1. **答案卡 (Answer Card)：** 每位玩家發 1 張牌作為答案。
@@ -48,7 +48,7 @@
 
 ---
 
-## 🇬🇧 English Rules
+## English Rules
 
 ### Setup
 1. **Answer Card:** Deal 1 card to each player. 
@@ -85,4 +85,4 @@ A card you play is considered a "Clue" (and receives a "Yes") if it meets **ANY*
 * **Correct Guess & Victory:** The first player to correctly guess their card wins. If multiple players guess correctly within the same round (using the exact same number of turns), the game ends in a **draw**.
 
 ---
-*Game Design by [你的名字/筆名], 2026. Feel free to fork, play, and share!*
+*Game Design by Hung Jui Chang, 2026. Feel free to fork, play, and share!*
