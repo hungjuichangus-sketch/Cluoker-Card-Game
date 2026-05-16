@@ -39,6 +39,7 @@ export function MultiGamePage() {
   const mpError = useGameStore((s) => s.mpError);
   const mpPlayClue = useGameStore((s) => s.mpPlayClue);
   const mpMakeGuess = useGameStore((s) => s.mpMakeGuess);
+  const mpRestartGame = useGameStore((s) => s.mpRestartGame);
   const leaveOnlineRoom = useGameStore((s) => s.leaveOnlineRoom);
 
   const [isGuessModalOpen, setGuessModalOpen] = useState(false);
@@ -149,12 +150,23 @@ export function MultiGamePage() {
               Make a Guess (one chance!)
             </button>
           )}
+          {isFinished && mpView.isHost && (
+            <button
+              onClick={mpRestartGame}
+              className="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold rounded-lg text-sm transition-colors"
+            >
+              New Round
+            </button>
+          )}
+          {isFinished && !mpView.isHost && (
+            <span className="text-green-600 text-sm animate-pulse">Waiting for host to start a new round…</span>
+          )}
           {isFinished && (
             <button
               onClick={leaveOnlineRoom}
-              className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg text-sm transition-colors"
+              className="px-4 py-2 bg-green-900/60 hover:bg-green-800 text-green-400 font-medium rounded-lg text-sm transition-colors"
             >
-              Back to Home
+              Leave Room
             </button>
           )}
         </div>

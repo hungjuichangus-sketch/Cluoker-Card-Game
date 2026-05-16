@@ -101,6 +101,7 @@ export interface GameStore {
   startOnlineGame: () => void;
   mpPlayClue: (cardIndex: number) => void;
   mpMakeGuess: (card: Card) => void;
+  mpRestartGame: () => void;
   leaveOnlineRoom: () => void;
   clearMpError: () => void;
 }
@@ -276,6 +277,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({
         mpLobbyPlayers: lobby.players,
         mpIsHost: lobby.hostId === get().mpPlayerId,
+        page: 'waiting',
       });
     });
 
@@ -319,6 +321,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   mpMakeGuess: (card) => {
     const { mpRoomCode } = get();
     if (mpRoomCode) socket.emit('make_guess', { roomCode: mpRoomCode, card });
+  },
+
+  mpRestartGame: () => {
+    const { mpRoomCode } = get();
+    if (mpRoomCode) socket.emit('restart_game', { roomCode: mpRoomCode });
   },
 
   leaveOnlineRoom: () => {
