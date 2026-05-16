@@ -55,7 +55,7 @@ export function MultiGamePage() {
 
   const statusText = isFinished
     ? iWon
-      ? '🎉 You cracked the code — You win!'
+      ? mpView.winners.length > 1 ? `🤝 It's a tie! You & ${mpView.winnerNames.filter((n) => n !== mpView.playerName).join(' & ')} both cracked it!` : '🎉 You cracked the code — You win!'
       : mpView.winnerNames.length > 0
         ? `${winnerLabel} won!`
         : '💀 Eliminated — Better luck next time.'
