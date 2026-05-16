@@ -141,13 +141,15 @@ export function MultiGamePage() {
         </div>
 
         <div className="flex gap-3 flex-wrap">
-          {isMyTurn && !mpView.myHasGuessed && (
+          {!isFinished && (
             <button
               onClick={() => setGuessModalOpen(true)}
-              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold
-                rounded-lg text-sm transition-colors shadow"
+              className={`px-4 py-2 font-bold rounded-lg text-sm transition-colors shadow
+                ${isMyTurn && !mpView.myHasGuessed
+                  ? 'bg-yellow-500 hover:bg-yellow-400 text-gray-900'
+                  : 'bg-green-800/60 hover:bg-green-700/60 text-gray-300'}`}
             >
-              Make a Guess (one chance!)
+              {isMyTurn && !mpView.myHasGuessed ? 'Make a Guess (one chance!)' : 'Check Board'}
             </button>
           )}
           {isFinished && mpView.isHost && (
@@ -189,6 +191,7 @@ export function MultiGamePage() {
           onEliminatedChange={setGuessEliminated}
           onGuess={handleGuess}
           onClose={() => setGuessModalOpen(false)}
+          canGuess={isMyTurn && !mpView.myHasGuessed}
         />
       )}
     </div>

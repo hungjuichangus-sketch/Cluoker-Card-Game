@@ -24,9 +24,10 @@ interface GuessModalProps {
   onEliminatedChange: (next: Set<string>) => void;
   onGuess: (card: Card) => void;
   onClose: () => void;
+  canGuess?: boolean;
 }
 
-export function GuessModal({ eliminated, onEliminatedChange, onGuess, onClose }: GuessModalProps) {
+export function GuessModal({ eliminated, onEliminatedChange, onGuess, onClose, canGuess = true }: GuessModalProps) {
   const [selected, setSelected] = useState<Card | null>(null);
   const [eliminateMode, setEliminateMode] = useState(false);
 
@@ -77,8 +78,8 @@ export function GuessModal({ eliminated, onEliminatedChange, onGuess, onClose }:
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-white font-black text-lg leading-none">Make Your Guess</h2>
-            <p className="text-gray-500 text-xs mt-1">One shot only — choose carefully.</p>
+            <h2 className="text-white font-black text-lg leading-none">{canGuess ? 'Make Your Guess' : 'Card Board'}</h2>
+            <p className="text-gray-500 text-xs mt-1">{canGuess ? 'One shot only — choose carefully.' : 'Track possibilities — not your turn to guess.'}</p>
           </div>
 
           {/* Eliminate mode toggle */}
@@ -150,19 +151,23 @@ export function GuessModal({ eliminated, onEliminatedChange, onGuess, onClose }:
 
         {/* Action row */}
         <div className="flex items-center gap-3">
-          <button
-            disabled={!selected}
-            onClick={() => selected && onGuess(selected)}
-            className="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-700 disabled:text-gray-500
-              text-gray-900 font-bold rounded-lg text-sm transition-colors"
-          >
-            {selected ? `Guess ${cardLabel(selected)}` : 'Select a card to guess'}
-          </button>
+          {canGuess ? (
+            <button
+              disabled={!selected}
+              onClick={() => selected && onGuess(selected)}
+              className="px-5 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-700 disabled:text-gray-500
+                text-gray-900 font-bold rounded-lg text-sm transition-colors"
+            >
+              {selected ? `Guess ${cardLabel(selected)}` : 'Select a card to guess'}
+            </button>
+          ) : (
+            <span className="text-gray-600 text-xs italic">Wait for your turn to guess</span>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-400 hover:text-white text-sm transition-colors"
           >
-            Cancel
+            Close
           </button>
           {eliminated.size > 0 && (
             <button
