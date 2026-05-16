@@ -50,16 +50,22 @@ export function MultiGamePage() {
   const isMyTurn = mpView.activePlayerId === mpView.playerId && mpView.phase === 'playing';
   const isFinished = mpView.phase === 'finished';
   const iWon = mpView.winners.includes(mpView.playerId);
+  const isLastRound = mpView.winners.length > 0 && !isFinished;
+  const winnerLabel = mpView.winnerNames.join(' & ');
 
   const statusText = isFinished
     ? iWon
       ? '🎉 You cracked the code — You win!'
       : mpView.winnerNames.length > 0
-        ? `${mpView.winnerNames.join(', ')} won!`
+        ? `${winnerLabel} won!`
         : '💀 Eliminated — Better luck next time.'
-    : isMyTurn
-      ? 'Your turn — click a card to play a clue'
-      : `Waiting for ${mpView.opponents.find((o) => o.id === mpView.activePlayerId)?.name ?? 'opponent'}…`;
+    : isLastRound
+      ? isMyTurn
+        ? `⚡ ${winnerLabel} got it — your last chance to tie!`
+        : `⚡ Last round — ${winnerLabel} won, waiting for ${mpView.opponents.find((o) => o.id === mpView.activePlayerId)?.name ?? 'opponent'}…`
+      : isMyTurn
+        ? 'Your turn — click a card to play a clue'
+        : `Waiting for ${mpView.opponents.find((o) => o.id === mpView.activePlayerId)?.name ?? 'opponent'}…`;
 
   function handleGuess(card: Parameters<typeof mpMakeGuess>[0]) {
     mpMakeGuess(card);
@@ -84,7 +90,9 @@ export function MultiGamePage() {
       <div className={`text-center text-sm font-medium py-2 px-4 rounded-lg transition-colors
         ${isFinished
           ? iWon ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-900/40 text-red-300'
-          : isMyTurn ? 'bg-green-800/50 text-green-300' : 'bg-blue-900/30 text-blue-300 animate-pulse'}`}
+          : isLastRound
+            ? isMyTurn ? 'bg-orange-500/20 text-orange-300 animate-pulse' : 'bg-orange-900/20 text-orange-400 animate-pulse'
+            : isMyTurn ? 'bg-green-800/50 text-green-300' : 'bg-blue-900/30 text-blue-300 animate-pulse'}`}
       >
         {statusText}
       </div>
