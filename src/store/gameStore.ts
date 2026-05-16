@@ -3,8 +3,10 @@ import type { Card, Difficulty, GamePhase, GameState, Player, PlayedClue } from 
 import { createShuffledDeck, cardLabel } from '../game/deck';
 import { isClue } from '../game/rules';
 import { decideAiTurn } from '../game/ai';
+import { socket } from '../socket';
+import type { LobbyPlayer, LobbyView, PlayerView } from '../types/multiplayer';
 
-export type AppPage = 'home' | 'game';
+export type AppPage = 'home' | 'game' | 'lobby' | 'waiting' | 'multi-game';
 
 function cardsEqual(a: Card, b: Card): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -69,6 +71,7 @@ function appendLog(log: string[], entry: string): string[] {
 }
 
 export interface GameStore {
+  // ── Solo ──────────────────────────────────────────────
   page: AppPage;
   game: GameState | null;
   isGuessModalOpen: boolean;
@@ -82,13 +85,42 @@ export interface GameStore {
   openGuessModal: () => void;
   closeGuessModal: () => void;
   processCurrentAiTurn: () => void;
+
+  // ── Multiplayer ───────────────────────────────────────
+  mpRoomCode: string | null;
+  mpPlayerId: string | null;
+  mpPlayerName: string | null;
+  mpIsHost: boolean;
+  mpLobbyPlayers: LobbyPlayer[];
+  mpView: PlayerView | null;
+  mpError: string | null;
+
+  initMultiplayer: () => void;
+  createOnlineRoom: (playerName: string) => void;
+  joinOnlineRoom: (playerName: string, roomCode: string) => void;
+  startOnlineGame: () => void;
+  mpPlayClue: (cardIndex: number) => void;
+  mpMakeGuess: (card: Card) => void;
+  leaveOnlineRoom: () => void;
+  clearMpError: () => void;
 }
+
+const MP_RESET = {
+  mpRoomCode: null,
+  mpPlayerId: null,
+  mpPlayerName: null,
+  mpIsHost: false,
+  mpLobbyPlayers: [],
+  mpView: null,
+  mpError: null,
+};
 
 export const useGameStore = create<GameStore>((set, get) => ({
   page: 'home',
   game: null,
   isGuessModalOpen: false,
   actionLog: [],
+  ...MP_RESET,
 
   navigateTo: (page) => set({ page }),
 
@@ -223,5 +255,74 @@ export const useGameStore = create<GameStore>((set, get) => ({
       game: { ...game, players, deck, activePlayerIndex: nextIdx, phase: nextPhase, winners },
       actionLog: appendLog(actionLog, entry),
     });
+  },
+
+  // ── Multiplayer actions ──────────────────────────────
+
+  clearMpError: () => set({ mpError: null }),
+
+  initMultiplayer: () => {
+    if (socket.hasListeners('room_created')) return; // already initialised
+
+    socket.on('room_created', ({ roomCode, playerId }: { roomCode: string; playerId: string }) => {
+      set({ mpRoomCode: roomCode, mpPlayerId: playerId, mpIsHost: true, page: 'waiting' });
+    });
+
+    socket.on('room_joined', ({ roomCode, playerId }: { roomCode: string; playerId: string }) => {
+      set({ mpRoomCode: roomCode, mpPlayerId: playerId, page: 'waiting' });
+    });
+
+    socket.on('room_updated', (lobby: LobbyView) => {
+      set({
+        mpLobbyPlayers: lobby.players,
+        mpIsHost: lobby.hostId === get().mpPlayerId,
+      });
+    });
+
+    socket.on('game_updated', (view: PlayerView) => {
+      set({ mpView: view, page: 'multi-game' });
+    });
+
+    socket.on('room_error', ({ message }: { message: string }) => {
+      set({ mpError: message });
+    });
+
+    socket.on('game_error', ({ message }: { message: string }) => {
+      set({ mpError: message });
+    });
+
+    socket.connect();
+  },
+
+  createOnlineRoom: (playerName) => {
+    set({ mpPlayerName: playerName, mpError: null });
+    get().initMultiplayer();
+    socket.emit('create_room', { playerName });
+  },
+
+  joinOnlineRoom: (playerName, roomCode) => {
+    set({ mpPlayerName: playerName, mpError: null });
+    get().initMultiplayer();
+    socket.emit('join_room', { playerName, roomCode: roomCode.toUpperCase() });
+  },
+
+  startOnlineGame: () => {
+    const { mpRoomCode } = get();
+    if (mpRoomCode) socket.emit('start_game', { roomCode: mpRoomCode });
+  },
+
+  mpPlayClue: (cardIndex) => {
+    const { mpRoomCode } = get();
+    if (mpRoomCode) socket.emit('play_clue', { roomCode: mpRoomCode, cardIndex });
+  },
+
+  mpMakeGuess: (card) => {
+    const { mpRoomCode } = get();
+    if (mpRoomCode) socket.emit('make_guess', { roomCode: mpRoomCode, card });
+  },
+
+  leaveOnlineRoom: () => {
+    socket.disconnect();
+    set({ page: 'home', ...MP_RESET });
   },
 }));

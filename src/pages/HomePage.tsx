@@ -6,6 +6,7 @@ const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 
 export function HomePage() {
   const startGame = useGameStore((s) => s.startGame);
+  const navigateTo = useGameStore((s) => s.navigateTo);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [numAi, setNumAi] = useState(1);
 
@@ -58,7 +59,14 @@ export function HomePage() {
           className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600
             text-gray-900 font-black rounded-xl text-base tracking-wide transition-colors shadow-lg"
         >
-          Deal Cards
+          Play Solo (vs AI)
+        </button>
+        <button
+          onClick={() => navigateTo('lobby')}
+          className="w-full py-2.5 bg-green-700/60 hover:bg-green-700 text-white font-bold
+            rounded-xl text-sm transition-colors"
+        >
+          Play with Friends
         </button>
       </div>
 
