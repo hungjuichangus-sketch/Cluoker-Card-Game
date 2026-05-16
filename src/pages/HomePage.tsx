@@ -66,6 +66,28 @@ export function HomePage() {
         <p>Play clues from your hand to narrow down your hidden Answer Card.</p>
         <p>One wrong guess eliminates you. Good luck.</p>
       </div>
+
+      {/* Rulebook links */}
+      <div className="flex gap-4">
+        <a
+          href="https://github.com/hungjuichangus-sketch/Cluoker-Card-Game/blob/main/Cluoker%20Rulebook%20v1.0.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-green-700/50
+            text-green-500 hover:text-white hover:border-green-500 text-xs font-medium transition-colors"
+        >
+          📖 Rules (EN)
+        </a>
+        <a
+          href="https://github.com/hungjuichangus-sketch/Cluoker-Card-Game/blob/main/Cluoker%20%E4%B8%AD%E6%96%87%E8%A6%8F%E5%89%87%E6%9B%B8v1.0.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-green-700/50
+            text-green-500 hover:text-white hover:border-green-500 text-xs font-medium transition-colors"
+        >
+          📖 規則書 (中文)
+        </a>
+      </div>
     </div>
   );
 }
