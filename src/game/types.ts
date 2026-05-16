@@ -42,5 +42,6 @@ export interface GameState {
   humanPlayerIndex: number;
   activePlayerIndex: number;
   deck: Card[];
-  winners: string[];       // player IDs of winners
+  winners: string[];              // player IDs of winners
+  lastChancePlayers: string[] | null; // null = normal play; array = last round in progress
 }

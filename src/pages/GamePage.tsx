@@ -35,17 +35,23 @@ export function GamePage() {
   const activePlayer = game.players[game.activePlayerIndex];
   const isHumanTurn = game.phase === 'player_turn' && game.activePlayerIndex === game.humanPlayerIndex;
   const isGameOver = game.phase === 'game_over';
+  const isLastRound = game.winners.length > 0 && !isGameOver;
   const humanWon = game.winners.includes(human.id);
+  const isTie = isGameOver && humanWon && game.winners.length > 1;
 
   const statusText = isGameOver
     ? humanWon
-      ? '🎉 You cracked the code! You win!'
+      ? isTie
+        ? `🤝 It's a tie! You & ${game.players.filter((p) => game.winners.includes(p.id) && !p.isHuman).map((p) => p.name).join(' & ')} both cracked it!`
+        : '🎉 You cracked the code! You win!'
       : game.winners.length > 0
         ? `${game.players.find((p) => p.id === game.winners[0])?.name} guessed correctly. You lose.`
         : '💀 Wrong guess — eliminated!'
-    : isHumanTurn
-      ? 'Your turn — click a hand card to play it as a clue, or make a guess'
-      : `${activePlayer?.name} is thinking…`;
+    : isLastRound
+      ? `You got it! ${activePlayer?.name} gets one last chance…`
+      : isHumanTurn
+        ? 'Your turn — click a hand card to play it as a clue, or make a guess'
+        : `${activePlayer?.name} is thinking…`;
 
   return (
     <div className="min-h-screen bg-green-950 flex flex-col p-4 gap-3 text-white">
@@ -65,12 +71,10 @@ export function GamePage() {
       <div
         className={`text-center text-sm font-medium py-2 px-4 rounded-lg transition-colors
           ${isGameOver
-            ? humanWon
-              ? 'bg-yellow-500/20 text-yellow-300'
-              : 'bg-red-900/40 text-red-300'
-            : isHumanTurn
-              ? 'bg-green-800/50 text-green-300'
-              : 'bg-blue-900/30 text-blue-300 animate-pulse'}`}
+            ? humanWon ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-900/40 text-red-300'
+            : isLastRound ? 'bg-orange-500/20 text-orange-300 animate-pulse'
+            : isHumanTurn ? 'bg-green-800/50 text-green-300'
+            : 'bg-blue-900/30 text-blue-300 animate-pulse'}`}
       >
         {statusText}
       </div>

@@ -48,6 +48,7 @@ function buildGame(difficulty: Difficulty, numAiPlayers: number): GameState {
     activePlayerIndex: 0,
     deck,
     winners: [],
+    lastChancePlayers: null,
   };
 }
 
@@ -55,6 +56,10 @@ function drawOne(deck: Card[], hand: Card[]): { hand: Card[]; deck: Card[] } {
   if (!deck.length) return { hand, deck };
   const [top, ...rest] = deck;
   return { hand: [...hand, top], deck: rest };
+}
+
+function getSoloLastChancePlayers(players: Player[], winnerIdx: number): string[] {
+  return players.slice(winnerIdx + 1).filter((p) => !p.isEliminated).map((p) => p.id);
 }
 
 function nextNonEliminated(players: Player[], from: number): number {
@@ -181,15 +186,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const correct = cardsEqual(guess, human.answerCard);
     const updatedHuman: Player = { ...human, hasGuessed: true, isEliminated: !correct };
     const players = game.players.map((p, i) => (i === game.humanPlayerIndex ? updatedHuman : p));
-    const entry = correct
-      ? `You guessed ${cardLabel(guess)} → Correct! You win!`
-      : `You guessed ${cardLabel(guess)} → Wrong! Eliminated.`;
 
-    set({
-      game: { ...game, players, phase: 'game_over', winners: correct ? [human.id] : [] },
-      isGuessModalOpen: false,
-      actionLog: appendLog(actionLog, entry),
-    });
+    if (correct) {
+      const lcp = getSoloLastChancePlayers(players, game.humanPlayerIndex);
+      if (lcp.length === 0) {
+        set({
+          game: { ...game, players, phase: 'game_over', winners: [human.id], lastChancePlayers: null },
+          isGuessModalOpen: false,
+          actionLog: appendLog(actionLog, `You guessed ${cardLabel(guess)} → Correct! You win!`),
+        });
+      } else {
+        const nextIdx = nextNonEliminated(players, game.humanPlayerIndex);
+        set({
+          game: { ...game, players, phase: 'ai_turn', activePlayerIndex: nextIdx, winners: [human.id], lastChancePlayers: lcp },
+          isGuessModalOpen: false,
+          actionLog: appendLog(actionLog, `You guessed ${cardLabel(guess)} → Correct! Opponents get one last chance…`),
+        });
+      }
+    } else {
+      set({
+        game: { ...game, players, phase: 'game_over', winners: [] },
+        isGuessModalOpen: false,
+        actionLog: appendLog(actionLog, `You guessed ${cardLabel(guess)} → Wrong! Eliminated.`),
+      });
+    }
   },
 
   processCurrentAiTurn: () => {
@@ -205,12 +225,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     let deck = [...game.deck];
     let phase: GamePhase = game.phase;
     let winners = [...game.winners];
+    let lastChancePlayers: string[] | null = game.lastChancePlayers;
     let entry = '';
 
     if (decision.action === 'guess' && decision.guess) {
       const correct = cardsEqual(decision.guess, ai.answerCard);
       entry = correct
-        ? `${ai.name} guessed ${cardLabel(decision.guess)} → Correct! ${ai.name} wins.`
+        ? `${ai.name} guessed ${cardLabel(decision.guess)} → Correct!`
         : `${ai.name} guessed ${cardLabel(decision.guess)} → Wrong! Eliminated.`;
 
       players = players.map((p, i) =>
@@ -218,14 +239,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
       );
 
       if (correct) {
-        phase = 'game_over';
-        winners = [ai.id];
+        winners = [...winners, ai.id];
+        if (lastChancePlayers !== null) {
+          lastChancePlayers = lastChancePlayers.filter((id) => id !== ai.id);
+          if (lastChancePlayers.length === 0) phase = 'game_over';
+        } else {
+          lastChancePlayers = getSoloLastChancePlayers(players, aiIdx);
+          if (lastChancePlayers.length === 0) phase = 'game_over';
+        }
       } else {
-        const alive = players.filter((p) => !p.isEliminated);
-        if (alive.length === 1 && alive[0].isHuman) {
-          phase = 'game_over';
-          winners = [players[game.humanPlayerIndex].id];
-          entry += ' You are the last one standing!';
+        if (lastChancePlayers !== null) {
+          lastChancePlayers = lastChancePlayers.filter((id) => id !== ai.id);
+          if (lastChancePlayers.length === 0) phase = 'game_over';
+        }
+        if (phase !== 'game_over') {
+          const alive = players.filter((p) => !p.isEliminated);
+          if (alive.length === 1 && alive[0].isHuman) {
+            phase = 'game_over';
+            if (winners.length === 0) winners = [players[game.humanPlayerIndex].id];
+            entry += ' You are the last one standing!';
+          }
         }
       }
     } else if (decision.action === 'play_clue' && decision.card) {
@@ -242,6 +275,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
           ? { ...p, hand: drawn.hand, playedClues: [...p.playedClues, { card: played, result }] }
           : p,
       );
+
+      if (lastChancePlayers !== null) {
+        lastChancePlayers = lastChancePlayers.filter((id) => id !== ai.id);
+        if (lastChancePlayers.length === 0) phase = 'game_over';
+      }
     }
 
     const nextIdx = phase === 'game_over' ? aiIdx : nextNonEliminated(players, aiIdx);
@@ -253,7 +291,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           : 'ai_turn';
 
     set({
-      game: { ...game, players, deck, activePlayerIndex: nextIdx, phase: nextPhase, winners },
+      game: { ...game, players, deck, activePlayerIndex: nextIdx, phase: nextPhase, winners, lastChancePlayers },
       actionLog: appendLog(actionLog, entry),
     });
   },
